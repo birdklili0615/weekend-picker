@@ -15,9 +15,31 @@ body { display:flex; justify-content:center; }
 .frame { position:relative; width:100%; aspect-ratio:402/874; overflow:hidden; }
 .bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none; }
 .hotspot,.navspot,.copy-btn,.next-hit { position:absolute; border:0; background:transparent; padding:0; margin:0; -webkit-tap-highlight-color:transparent; }
-.tick { position:absolute; width:24px; height:24px; pointer-events:none; }
+
+.tick {
+  position:absolute;
+  width:30px;
+  height:30px;
+  pointer-events:none;
+  z-index:7;
+}
+
 .tick svg { width:100%; height:100%; overflow:visible; }
-.tick path { fill:none; stroke:#111; stroke-width:5.5; stroke-linecap:round; stroke-linejoin:round; }
+
+.tick path {
+  fill:none;
+  stroke:#111;
+  stroke-width:5.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  paint-order:stroke;
+  filter:
+    drop-shadow(1px 0 0 #fff)
+    drop-shadow(-1px 0 0 #fff)
+    drop-shadow(0 1px 0 #fff)
+    drop-shadow(0 -1px 0 #fff);
+}
+
 
 .input-wrap {
   position:absolute;
@@ -204,6 +226,49 @@ body { display:flex; justify-content:center; }
   box-shadow:1px 2px 0 rgba(0,0,0,.16);
 }
 
+
+.submit-block {
+  position:absolute;
+  left:23%;
+  top:82.0%;
+  width:54%;
+  z-index:6;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.submit-result-btn {
+  width:100%;
+  min-height:48px;
+  border:4px solid #111;
+  border-radius:22px 17px 25px 18px;
+  background:#111;
+  color:#fff;
+  font-family:"Microsoft YaHei","SimHei","PingFang SC",Arial,sans-serif;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:3px;
+  box-shadow:4px 5px 0 rgba(0,0,0,.16);
+}
+.submit-result-btn:active {
+  transform:translate(3px,3px);
+  box-shadow:1px 2px 0 rgba(0,0,0,.15);
+}
+.submit-result-btn:disabled {
+  opacity:.62;
+  transform:none;
+  box-shadow:none;
+}
+.submit-note {
+  width:145%;
+  text-align:center;
+  font-family:"Microsoft YaHei","SimHei","PingFang SC",Arial,sans-serif;
+  font-size:10px;
+  color:#555;
+  white-space:nowrap;
+}
+
 </style>
 </head>
 <body>
@@ -253,14 +318,20 @@ body { display:flex; justify-content:center; }
     <div class="result-fill places" id="resultPlaces"></div>
     <div class="result-fill foods" id="resultFoods"></div>
     <div class="result-fill times" id="resultTimes"></div>
-    <button class="copy-btn" id="copyBtn" aria-label="复制结果" style="left:24%;top:82%;width:52%;height:7%;"></button>
+    
+<div class="submit-block">
+  <button class="submit-result-btn" id="submitResultBtn" type="button">安排</button>
+  <div class="submit-note">点击后会把本次的挂壁选择提上日程</div>
+</div>
+<button class="copy-btn" id="copyBtn" aria-label="复制结果" style="left:5%;top:91%;width:14%;height:5%;"></button>
+
   </div></section>
 </div>
 <div class="toast" id="toast">已复制结果</div>
 <script>
 const timeOptions = [{"id": "fri_night", "label": "本周五晚上", "rect": [44, 174, 312, 50], "check": [10, 196, 24, 24]}, {"id": "sat_pm", "label": "本周六下午", "rect": [44, 244, 312, 50], "check": [10, 268, 24, 24]}, {"id": "sat_night", "label": "本周六晚上", "rect": [44, 339, 312, 50], "check": [10, 363, 24, 24]}, {"id": "sun_pm", "label": "本周日下午", "rect": [44, 413, 312, 50], "check": [10, 437, 24, 24]}, {"id": "think_more", "label": "再让我想想", "rect": [50, 504, 303, 42], "check": [13, 514, 24, 24]}];
-const placeOptions = [{"id": "wushang_tasting", "label": "武商试吃", "rect": [40, 153, 88, 112], "check": [132, 166, 24, 24]}, {"id": "coffee", "label": "咖啡", "rect": [154, 153, 88, 112], "check": [132, 166, 24, 24]}, {"id": "photos", "label": "出片", "rect": [268, 153, 88, 112], "check": [358, 166, 24, 24]}, {"id": "climbing", "label": "攀岩", "rect": [40, 279, 88, 112], "check": [10, 294, 24, 24]}, {"id": "boating", "label": "划船", "rect": [154, 279, 88, 112], "check": [132, 294, 24, 24]}, {"id": "cat_cafe", "label": "撸奶猫", "rect": [268, 279, 88, 112], "check": [358, 294, 24, 24]}, {"id": "mall", "label": "逛商场", "rect": [40, 404, 88, 112], "check": [10, 418, 24, 24]}, {"id": "flower", "label": "采花", "rect": [154, 404, 88, 112], "check": [132, 418, 24, 24]}, {"id": "vintage", "label": "淘古着", "rect": [268, 404, 88, 112], "check": [358, 418, 24, 24]}];
-const foodOptions = [{"id": "shibalu", "label": "十八馋", "rect": [44, 148, 82, 57], "check": [128, 160, 24, 24]}, {"id": "cloud_pho", "label": "Cloud PHO", "rect": [153, 148, 82, 57], "check": [128, 160, 24, 24]}, {"id": "yiqi_skewers", "label": "义气羊肉串", "rect": [264, 148, 82, 57], "check": [347, 160, 24, 24]}, {"id": "zhoudi_hotpot", "label": "粥底火锅", "rect": [44, 219, 82, 57], "check": [128, 231, 24, 24]}, {"id": "gonglue_hotpot", "label": "宫略火锅", "rect": [153, 219, 82, 57], "check": [128, 231, 24, 24]}, {"id": "nvrenjie", "label": "女人街串串", "rect": [264, 219, 82, 57], "check": [347, 231, 24, 24]}, {"id": "dingceng_curry", "label": "顶层咖喱", "rect": [44, 289, 82, 57], "check": [128, 302, 24, 24]}, {"id": "bbq_buffet", "label": "烤肉自助", "rect": [153, 289, 82, 57], "check": [128, 302, 24, 24]}, {"id": "fat_brother_dumplings", "label": "胖哥饺子", "rect": [264, 289, 82, 57], "check": [347, 302, 24, 24]}, {"id": "man_sushi", "label": "漫寿司", "rect": [44, 360, 82, 57], "check": [128, 372, 24, 24]}, {"id": "qingxi_pot", "label": "青喜锅", "rect": [153, 360, 82, 57], "check": [128, 372, 24, 24]}, {"id": "jiliu_daren", "label": "鸡柳大人", "rect": [264, 360, 82, 57], "check": [347, 372, 24, 24]}, {"id": "dazhi_small_kitchen", "label": "大志小厨", "rect": [44, 430, 82, 57], "check": [128, 442, 24, 24]}, {"id": "banana_veg", "label": "香蕉菜悦", "rect": [153, 430, 82, 57], "check": [128, 442, 24, 24]}, {"id": "jibenbu", "label": "鸡本部", "rect": [264, 430, 82, 57], "check": [347, 442, 24, 24]}];
+const placeOptions = [{"id": "wushang_tasting", "label": "武商试吃", "rect": [40, 153, 88, 112], "check": [132, 166, 24, 24]}, {"id": "coffee", "label": "咖啡", "rect": [154, 153, 88, 112], "check": [132, 166, 24, 24]}, {"id": "photos", "label": "出片", "rect": [268, 153, 88, 112], "check": [358, 166, 24, 24]}, {"id": "climbing", "label": "攀岩", "rect": [40, 279, 88, 112], "check": [10, 294, 24, 24]}, {"id": "boating", "label": "划船", "rect": [154, 279, 88, 112], "check": [132, 294, 24, 24]}, {"id": "cat_cafe", "label": "找奶糖", "rect": [268, 279, 88, 112], "check": [358, 294, 24, 24]}, {"id": "mall", "label": "逛商场", "rect": [40, 404, 88, 112], "check": [10, 418, 24, 24]}, {"id": "flower", "label": "采花", "rect": [154, 404, 88, 112], "check": [132, 418, 24, 24]}, {"id": "vintage", "label": "淘古着", "rect": [268, 404, 88, 112], "check": [358, 418, 24, 24]}];
+const foodOptions = [{"id": "shibalu", "label": "广八路", "rect": [44, 148, 82, 57], "check": [128, 160, 24, 24]}, {"id": "cloud_pho", "label": "Cloud PHO", "rect": [153, 148, 82, 57], "check": [128, 160, 24, 24]}, {"id": "yiqi_skewers", "label": "义气", "rect": [264, 148, 82, 57], "check": [347, 160, 24, 24]}, {"id": "zhoudi_hotpot", "label": "粥底火锅", "rect": [44, 219, 82, 57], "check": [128, 231, 24, 24]}, {"id": "gonglue_hotpot", "label": "宫略", "rect": [153, 219, 82, 57], "check": [128, 231, 24, 24]}, {"id": "nvrenjie", "label": "女人街", "rect": [264, 219, 82, 57], "check": [347, 231, 24, 24]}, {"id": "dingceng_curry", "label": "顶屋咖喱", "rect": [44, 289, 82, 57], "check": [128, 302, 24, 24]}, {"id": "bbq_buffet", "label": "烤肉自助", "rect": [153, 289, 82, 57], "check": [128, 302, 24, 24]}, {"id": "fat_brother_dumplings", "label": "胖哥饺子馆", "rect": [264, 289, 82, 57], "check": [347, 302, 24, 24]}, {"id": "man_sushi", "label": "滨寿司", "rect": [44, 360, 82, 57], "check": [128, 372, 24, 24]}, {"id": "qingxi_pot", "label": "寿喜锅", "rect": [153, 360, 82, 57], "check": [128, 372, 24, 24]}, {"id": "jiliu_daren", "label": "鸡柳大人", "rect": [264, 360, 82, 57], "check": [347, 372, 24, 24]}, {"id": "dazhi_small_kitchen", "label": "大志小厨", "rect": [44, 430, 82, 57], "check": [128, 442, 24, 24]}, {"id": "banana_veg", "label": "香香菜馆", "rect": [153, 430, 82, 57], "check": [128, 442, 24, 24]}, {"id": "jibenbu", "label": "鸡本部", "rect": [264, 430, 82, 57], "check": [347, 442, 24, 24]}];
 const state = { screen:"home", times:new Set(), places:new Set(), foods:new Set(), customPlace:"", customFood:"" };
 const screens = {
   home: document.getElementById("screen-home"),
@@ -279,11 +350,15 @@ function pxX(v) { return (v/402*100)+"%"; }
 function pxY(v) { return (v/874*100)+"%"; }
 function pxW(v) { return (v/402*100)+"%"; }
 function pxH(v) { return (v/874*100)+"%"; }
-function makeTick(x, y) {
+function makeTick(rect) {
+  const tickSize = 30;
+  const centerX = rect[0] + rect[2] / 2;
+  const centerY = rect[1] + rect[3] / 2;
+
   const d = document.createElement("div");
   d.className = "tick";
-  d.style.left = pxX(x);
-  d.style.top = pxY(y);
+  d.style.left = pxX(centerX - tickSize / 2);
+  d.style.top = pxY(centerY - tickSize / 2);
   d.innerHTML = '<svg viewBox="0 0 24 24"><path d="M2 13.5 L8.2 20 L22 3.5"></path></svg>';
   return d;
 }
@@ -310,10 +385,14 @@ function redrawChecks(containerId, options, selectedSet) {
   const c = document.getElementById(containerId);
   c.innerHTML = "";
   options.forEach(opt => {
-    if (selectedSet.has(opt.id)) c.appendChild(makeTick(opt.check[0], opt.check[1]));
+    if (selectedSet.has(opt.id)) c.appendChild(makeTick(opt.rect));
   });
 }
 function updateNext() {
+  if (typeof submitResultBtn !== "undefined" && submitResultBtn) {
+    submitResultBtn.textContent = "安排";
+  }
+  resultSubmittedSignature = "";
   document.getElementById("time-next").classList.toggle("show", state.times.size > 0);
   document.getElementById("place-next").classList.toggle("show", state.places.size > 0 || state.customPlace.trim() !== "");
   document.getElementById("food-next").classList.toggle("show", state.foods.size > 0 || state.customFood.trim() !== "");
@@ -441,6 +520,85 @@ document.querySelectorAll("[data-go]").forEach(btn => {
 document.querySelectorAll("[data-back]").forEach(btn => btn.addEventListener("click", () => showScreen(btn.getAttribute("data-back"))));
 document.getElementById("customPlace").addEventListener("input", e => { state.customPlace = e.target.value; updateNext(); });
 document.getElementById("customFood").addEventListener("input", e => { state.customFood = e.target.value; updateNext(); });
+
+const FORM_ENDPOINT = "https://formsubmit.co/ajax/910471032@qq.com";
+const submitResultBtn = document.getElementById("submitResultBtn");
+let resultSubmitting = false;
+let resultSubmittedSignature = "";
+
+function currentSubmissionPayload() {
+  const times = selectedLabels(timeOptions, state.times);
+  const places = selectedLabels(placeOptions, state.places);
+  const foods = selectedLabels(foodOptions, state.foods);
+
+  if (state.customPlace.trim()) places.push(state.customPlace.trim());
+  if (state.customFood.trim()) foods.push(state.customFood.trim());
+
+  const submittedAt = new Date();
+  const submissionId =
+    submittedAt.getTime().toString(36) + "-" +
+    Math.random().toString(36).slice(2, 8);
+
+  return {
+    _subject: "EE Hang Out：收到一份新的选择",
+    _template: "table",
+    _captcha: "false",
+    "提交编号": submissionId,
+    "提交时间": submittedAt.toLocaleString("zh-CN", { hour12: false }),
+    "时间": times.join("、") || "未选择",
+    "活动": places.join("、") || "未选择",
+    "吃什么": foods.join("、") || "未选择",
+    "自定义活动": state.customPlace.trim() || "无",
+    "自定义食物": state.customFood.trim() || "无",
+    "页面地址": window.location.href
+  };
+}
+
+function payloadSignature(payload) {
+  return [payload["时间"], payload["活动"], payload["吃什么"]].join("|");
+}
+
+async function submitResultByEmail() {
+  if (resultSubmitting) return;
+
+  const payload = currentSubmissionPayload();
+  const signature = payloadSignature(payload);
+
+  if (signature === resultSubmittedSignature) {
+    showToast("这份安排已经提交过了");
+    return;
+  }
+
+  resultSubmitting = true;
+  submitResultBtn.disabled = true;
+  submitResultBtn.textContent = "安排中…";
+
+  try {
+    const response = await fetch(FORM_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error("提交失败");
+
+    resultSubmittedSignature = signature;
+    submitResultBtn.textContent = "已安排";
+    showToast("已提上日程");
+  } catch (error) {
+    submitResultBtn.textContent = "重新安排";
+    showToast("安排失败，请稍后重试");
+  } finally {
+    resultSubmitting = false;
+    submitResultBtn.disabled = false;
+  }
+}
+
+submitResultBtn.addEventListener("click", submitResultByEmail);
+
 document.getElementById("copyBtn").addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(resultText());
